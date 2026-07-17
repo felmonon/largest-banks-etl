@@ -171,6 +171,19 @@ def transform(banks: Iterable[dict], rates: dict[str, Decimal]) -> list[dict]:
     return transformed
 
 
+def print_extract_preview(banks: Iterable[dict]) -> None:
+    """Print the extracted USD records for assignment evidence."""
+    records = list(banks)
+    print("\nEXTRACTED TOP 10 BANKS (USD BILLIONS)")
+    print("-" * 79)
+    print(f"{'Rank':<6}{'Bank':<36}{'Ticker':<16}{'USD Market Cap':>16}")
+    print("-" * 79)
+    for bank in records:
+        usd = Decimal(bank["MC_USD_Billion"]).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        print(f"{bank['Rank']:<6}{bank['Name']:<36}{bank['Ticker']:<16}{usd:>16}")
+    print("-" * 79)
+
+
 def load_csv(records: Iterable[dict], output_path: Path) -> None:
     """Write transformed records to CSV."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -226,18 +239,18 @@ def configure_logging(log_path: Path) -> None:
 
 
 def project_root() -> Path:
-    return Path(__file__).resolve().parents[1]
+    return Path(__file__).resolve().parent
 
 
 def parse_args() -> argparse.Namespace:
     root = project_root()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source-url", default=SOURCE_URL)
-    parser.add_argument("--exchange-rates", type=Path, default=root / "data/exchange_rates.csv")
-    parser.add_argument("--output-csv", type=Path, default=root / "output/largest_banks.csv")
-    parser.add_argument("--database", type=Path, default=root / "output/banks.db")
+    parser.add_argument("--exchange-rates", type=Path, default=root / "exchange_rate.csv")
+    parser.add_argument("--output-csv", type=Path, default=root / "Largest_banks_data.csv")
+    parser.add_argument("--database", type=Path, default=root / "Banks.db")
     parser.add_argument("--table", default="Largest_banks")
-    parser.add_argument("--log-file", type=Path, default=root / "logs/etl_pipeline.log")
+    parser.add_argument("--log-file", type=Path, default=root / "code_log.txt")
     return parser.parse_args()
 
 
@@ -246,6 +259,7 @@ def run_pipeline(args: argparse.Namespace) -> list[dict]:
     LOGGER.info("Starting largest-banks ETL pipeline")
     html = extract_html(args.source_url)
     banks = parse_banks(html)
+    print_extract_preview(banks)
     rates = load_exchange_rates(args.exchange_rates)
     records = transform(banks, rates)
     load_csv(records, args.output_csv)

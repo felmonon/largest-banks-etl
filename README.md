@@ -1,33 +1,38 @@
-# Largest Banks ETL
+# World's Largest Banks ETL Assignment
 
-A Python ETL pipeline that extracts the world's ten largest publicly traded banks by market capitalization, converts USD market caps to GBP, EUR, and INR, and loads the results into both CSV and SQLite.
+This is a small data engineering assignment repository containing one Python script that runs the complete extract–transform–load workflow.
 
-## Data sources
+## Assignment deliverables
 
-- Bank ranking and USD market capitalization: [CompaniesMarketCap](https://companiesmarketcap.com/banks/largest-banks-by-market-cap/)
-- Foreign exchange reference rates: [European Central Bank](https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html), dated 16 July 2026
+| File | Purpose |
+|---|---|
+| [`banks_project.py`](banks_project.py) | The single Python script for the complete ETL pipeline |
+| [`exchange_rate.csv`](exchange_rate.csv) | USD-to-GBP, EUR, and INR exchange-rate input |
+| [`Largest_banks_data.csv`](Largest_banks_data.csv) | Transformed CSV output |
+| [`Banks.db`](Banks.db) | SQLite database containing table `Largest_banks` |
+| [`code_log.txt`](code_log.txt) | Timestamped ETL execution log |
+| [`Task_2c_extract.png`](Task_2c_extract.png) | Screenshot evidence of the top-ten extraction |
 
-The ECB quotes currencies per euro. The checked-in [`data/exchange_rates.csv`](data/exchange_rates.csv) normalizes those values to target-currency units per USD using:
+## ETL flow
+
+1. **Extract** — download and parse the top ten banks by market capitalization from [CompaniesMarketCap](https://companiesmarketcap.com/banks/largest-banks-by-market-cap/).
+2. **Transform** — convert each USD market cap to GBP, EUR, and INR billions using [`exchange_rate.csv`](exchange_rate.csv).
+3. **Load** — write the transformed records to `Largest_banks_data.csv` and replace the `Largest_banks` table in `Banks.db`.
+4. **Log** — record every ETL stage in `code_log.txt`.
+
+Market capitalization changes with security prices. Each row includes the UTC extraction timestamp in `Data_As_Of_UTC`.
+
+## Exchange rates
+
+The exchange-rate CSV is derived from [European Central Bank reference rates](https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html/index.en.html) dated 16 July 2026. ECB values are quoted per euro and normalized to target-currency units per USD:
 
 ```text
 target currency per USD = target currency per EUR / USD per EUR
 ```
 
-ECB inputs for 16 July 2026 were USD `1.1467`, GBP `0.84873`, EUR `1.0`, and INR `110.4895` per EUR. Reference rates are informational and are not intended for transaction settlement.
+ECB inputs were USD `1.1467`, GBP `0.84873`, EUR `1.0`, and INR `110.4895` per EUR. These reference rates are informational and are not intended for transaction settlement.
 
-Market capitalization changes with security prices. Each pipeline run records its UTC extraction timestamp in `Data_As_Of_UTC`.
-
-## Pipeline
-
-```text
-CompaniesMarketCap HTML ── extract ──> top 10 USD values
-                                             │
-exchange_rates.csv ─────── transform ────────┤
-                                             ├──> output/largest_banks.csv
-                                             └──> output/banks.db :: Largest_banks
-```
-
-## Run locally
+## Run the assignment
 
 Python 3.10 or newer is recommended.
 
@@ -35,37 +40,19 @@ Python 3.10 or newer is recommended.
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-python src/bank_etl.py
+python banks_project.py
 ```
 
-Generated artifacts:
+The script prints the extracted top-ten table, performs the currency conversions, writes both load targets, and appends execution events to `code_log.txt`.
 
-- `output/largest_banks.csv`
-- `output/banks.db`, table `Largest_banks`
-- `logs/etl_pipeline.log`
-
-Inspect the database:
+## Inspect the database table
 
 ```bash
-sqlite3 -header -column output/banks.db \
+sqlite3 -header -column Banks.db \
   'SELECT Rank, Name, MC_USD_Billion, MC_GBP_Billion, MC_EUR_Billion, MC_INR_Billion FROM Largest_banks ORDER BY Rank;'
 ```
 
-Optional paths and source URL can be changed with command-line flags:
-
-```bash
-python src/bank_etl.py --help
-```
-
-## Test and lint
-
-```bash
-pip install -r requirements-dev.txt
-ruff check .
-pytest -q
-```
-
-## Output schema
+## Output columns
 
 | Column | Meaning |
 |---|---|
@@ -79,9 +66,6 @@ pytest -q
 | `MC_INR_Billion` | Market cap in INR billions |
 | `Data_As_Of_UTC` | UTC extraction timestamp |
 
-## Notes
+## Extraction screenshot
 
-- The database load replaces the table transactionally, making reruns idempotent.
-- HTTP retries handle transient source failures.
-- Structural and row-count validation fails fast if the upstream HTML changes.
-- Values are rounded to two decimal places with decimal half-up rounding.
+![Top-ten extraction output](Task_2c_extract.png)

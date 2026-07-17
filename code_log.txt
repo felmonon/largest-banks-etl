@@ -1,0 +1,8 @@
+2026-07-16 21:34:36,819 | INFO | Starting largest-banks ETL pipeline
+2026-07-16 21:34:36,819 | INFO | Extracting bank rankings from https://companiesmarketcap.com/banks/largest-banks-by-market-cap/
+2026-07-16 21:34:37,605 | INFO | Extracted 10 ranked banks
+2026-07-16 21:34:37,606 | INFO | Reading exchange rates from /Users/felmonfekadu/neuroflow/exchange_rate.csv
+2026-07-16 21:34:37,606 | INFO | Transformed market caps into GBP, EUR and INR
+2026-07-16 21:34:37,607 | INFO | Loaded CSV output to /Users/felmonfekadu/neuroflow/Largest_banks_data.csv
+2026-07-16 21:34:37,609 | INFO | Loaded 10 rows into /Users/felmonfekadu/neuroflow/Banks.db table Largest_banks
+2026-07-16 21:34:37,609 | INFO | ETL pipeline completed successfully
